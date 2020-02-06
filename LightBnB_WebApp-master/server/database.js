@@ -71,7 +71,12 @@ exports.getAllReservations = getAllReservations;
  */
 const getAllProperties = function(options, limit = 10) {
   return pool.query(`
-  SELECT * FROM properties
+  SELECT p.id, owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, 
+  parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, 
+  post_code, active , AVG(rating) average_rating
+  FROM properties p
+  INNER JOIN property_reviews pr ON p.id = pr.property_id
+  GROUP BY p.id
   LIMIT $1
   `, [limit])
   .then(res => res.rows);
