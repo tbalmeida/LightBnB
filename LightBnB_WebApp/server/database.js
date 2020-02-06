@@ -11,19 +11,6 @@ const {pool} = require('./db');
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-// const getUserWithEmail = function(email) {
-//   let user;
-//   for (const userId in users) {
-//     user = users[userId];
-//     if (user.email.toLowerCase() === email.toLowerCase()) {
-//       break;
-//     } else {
-//       user = null;
-//     }
-//   }
-//   return Promise.resolve(user);
-// }
-// exports.getUserWithEmail = getUserWithEmail;
 const getUserWithEmail = function(email){
   return pool.query(`SELECT * FROM users WHERE email = $1`, [email.toLowerCase()])
   .then(res => res.rows[0])
@@ -51,11 +38,6 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser =  function(user) {
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
-
   return pool.query(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *;`
     , [user.name, user.email.toLowerCase(), user.password] )
   .then(res => res.rows[0])
@@ -84,8 +66,8 @@ const getAllReservations = function(guest_id, limit = 10) {
     ORDER BY start_date DESC
     LIMIT $2;`
   return pool.query(query, [guest_id, limit])
-  .then(res => res.rows[0])
-  .catch(err => null)
+  .then(res => res.rows)
+  .catch(err => null);
   // return getAllProperties(null, 2);
 }
 exports.getAllReservations = getAllReservations;
@@ -105,7 +87,7 @@ const getAllProperties = function(options, limit = 10) {
   let queryString = `
   SELECT properties.*, avg(property_reviews.rating) as average_rating
   FROM properties
-  JOIN property_reviews ON properties.id = property_id `;
+  LEFT JOIN property_reviews ON properties.id = property_id `;
 
   console.log("options", options)
   
@@ -155,7 +137,6 @@ const getAllProperties = function(options, limit = 10) {
   .then(res => res.rows)
   .catch(err => Error);
 }
-
 exports.getAllProperties = getAllProperties;
 
 
@@ -165,9 +146,15 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  formValues = Object.values(property);
+  return pool.query(
+  `INSERT INTO properties 
+      (title, description, number_of_bedrooms, number_of_bathrooms, parking_spaces, cost_per_night, thumbnail_photo_url, cover_photo_url, street, country, city, province, post_code, owner_id)
+  VALUES
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+  RETURNING *;`,
+  [...formValues])
+  .then(res => res.rows)
+  .catch(err => console.log(err))
 }
 exports.addProperty = addProperty;
